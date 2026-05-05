@@ -7,6 +7,7 @@ A Mini-C++ compiler for an 8th-semester Compiler Construction academic project.
 - **Parser** (Bison): Builds an Abstract Syntax Tree (AST) from tokens
 - **Semantic Analyzer**: Type checking and scope resolution via symbol table
 - **IR Generator**: Produces Three-Address Code (TAC) intermediate representation
+- **MiniVM**: A lightweight virtual machine to execute the generated TAC
 
 ## Supported Language Features
 - Data types: `int`, `float`, `char`, `bool`, `void`
@@ -31,10 +32,23 @@ cmake --build build
 ```
 
 ## Usage
+
+### 1. Compile to Structured Report
 ```powershell
-.\build\minicc.exe input.mcpp -o output.tac
-.\build\minicc.exe input.mcpp --ast       # Print AST only
-.\build\minicc.exe input.mcpp --tokens    # Print tokens only
+# Produces a report containing Tokens, AST, Semantic status, and TAC
+.\build\bin\minicc.exe input.mcpp -o output.tac
+```
+
+### 2. Execute the Code
+```powershell
+# Runs the generated TAC live using the MiniVM
+.\build\bin\minivm.exe output.tac
+```
+
+### 3. Debug Flags
+```powershell
+.\build\bin\minicc.exe input.mcpp --ast       # Print AST only
+.\build\bin\minicc.exe input.mcpp --tokens    # Print tokens only
 ```
 
 ## Run Tests

@@ -80,3 +80,4 @@ coverage/
 *.gcno
 *.gcov
 Testing/
+output.tac

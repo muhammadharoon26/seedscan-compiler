@@ -40,3 +40,8 @@ target_include_directories(minicc PRIVATE
     ${CMAKE_CURRENT_BINARY_DIR}
     ${CMAKE_SOURCE_DIR}/include
 )
+
+# ── Virtual Machine (TAC Interpreter) ──────────────────────────────────
+add_executable(minivm
+    minivm.cpp
+)

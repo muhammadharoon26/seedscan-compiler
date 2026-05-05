@@ -18,6 +18,7 @@
 #include <fstream>
 #include <iostream>
 #include <string>
+#include <sstream>
 
 #include "seedscan/ast.hpp"
 #include "seedscan/ast_printer.hpp"
@@ -27,8 +28,14 @@
 
 /* ── Flex/Bison interface ──────────────────────────────────────────────── */
 extern FILE* yyin;          // Flex reads from this file pointer
+extern int   yylex();
 extern int   yyparse();     // Bison-generated parser entry point
 extern int   yylineno;      // Current line number from Flex
+extern int   yycolumn;
+extern char* yytext;
+extern void  yyrestart(FILE*);
+struct YYLTYPE { int first_line, first_column, last_line, last_column; };
+extern YYLTYPE yylloc;
 
 /* Global AST root — set by the parser */
 extern seedscan::Program* g_program;
@@ -84,21 +91,53 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    // ── PHASE 1: Open source file for Flex ────────────────────────────
-    FILE* fp = fopen(inputFile.c_str(), "r");
-    if (!fp) {
+    // ── PHASE 1: Lexical Analysis (Dump Tokens) ───────────────────────
+    std::stringstream lexStream;
+    if (printTokens || !outputFile.empty()) {
+        FILE* fp1 = fopen(inputFile.c_str(), "r");
+        if (!fp1) {
+            std::cerr << "Error: Cannot open file '" << inputFile << "'\n";
+            return 1;
+        }
+        yyin = fp1;
+        yyrestart(fp1);
+        yylineno = 1;
+        yycolumn = 1;
+        
+        lexStream << "Line\tCol\tLexeme\n";
+        lexStream << "--------------------------------------\n";
+        while (yylex() != 0) {
+            // Calculate starting column. yycolumn is already advanced by yyleng.
+            int start_col = yycolumn - strlen(yytext);
+            lexStream << yylineno << "\t" << start_col << "\t[" << yytext << "]\n";
+        }
+        fclose(fp1);
+
+        if (printTokens) {
+            std::cout << "\n--- Lexeme Tokens ---\n";
+            std::cout << lexStream.str();
+            return 0;
+        }
+    }
+
+    // ── PHASE 2: Open source file for Parsing ──────────────────────────
+    FILE* fp2 = fopen(inputFile.c_str(), "r");
+    if (!fp2) {
         std::cerr << "Error: Cannot open file '" << inputFile << "'\n";
         return 1;
     }
-    yyin = fp;
+    yyin = fp2;
+    yyrestart(fp2);
+    yylineno = 1;
+    yycolumn = 1;
 
     std::cout << "=== SeedScan Mini-C++ Compiler ===\n";
     std::cout << "Compiling: " << inputFile << "\n\n";
 
-    // ── PHASE 2: Lexical + Syntax Analysis (Flex + Bison) ─────────────
+    // ── PHASE 1-2: Lexing & Parsing (Flex + Bison) ────────────────────
     std::cout << "[Phase 1-2] Lexing & Parsing...\n";
     int parseResult = yyparse();
-    fclose(fp);
+    fclose(fp2);
 
     if (parseResult != 0 || g_program == nullptr) {
         std::cerr << "Compilation failed: Parse errors detected.\n";
@@ -107,10 +146,13 @@ int main(int argc, char* argv[]) {
     std::cout << "[Phase 1-2] Parsing complete. AST constructed.\n";
 
     // ── Optional: Print AST ───────────────────────────────────────────
+    std::stringstream astStream;
+    seedscan::ASTPrinter printer(astStream);
+    g_program->accept(printer);
+
     if (printAST) {
         std::cout << "\n--- Abstract Syntax Tree ---\n";
-        seedscan::ASTPrinter printer(std::cout);
-        g_program->accept(printer);
+        std::cout << astStream.str();
         delete g_program;
         return 0;
     }
@@ -121,13 +163,37 @@ int main(int argc, char* argv[]) {
     seedscan::SemanticAnalyzer semanticAnalyzer(errorHandler);
     semanticAnalyzer.analyze(*g_program);
 
+    std::stringstream semStream;
     if (errorHandler.hasErrors()) {
         std::cerr << "\n";
         errorHandler.printAll(std::cerr);
+        errorHandler.printAll(semStream);
         std::cerr << "Compilation failed: Semantic errors detected.\n";
+    } else {
+        semStream << "Status: Passed\n";
+        semStream << "Warnings: " << errorHandler.warningCount() << "\n";
+        if (errorHandler.warningCount() > 0) {
+            errorHandler.printAll(semStream);
+        }
+    }
+    
+    if (errorHandler.hasErrors()) {
+        if (!outputFile.empty()) {
+            std::ofstream ofs(outputFile);
+            ofs << "============================================================\n";
+            ofs << "Phase 1-2: Abstract Syntax Tree (AST)\n";
+            ofs << "============================================================\n";
+            ofs << astStream.str() << "\n";
+            ofs << "============================================================\n";
+            ofs << "Phase 3: Semantic Analysis (FAILED)\n";
+            ofs << "============================================================\n";
+            ofs << semStream.str();
+            ofs.close();
+        }
         delete g_program;
         return 3;
     }
+
     std::cout << "[Phase 3]   Semantic analysis passed. "
               << errorHandler.warningCount() << " warning(s).\n";
 
@@ -140,7 +206,7 @@ int main(int argc, char* argv[]) {
     std::cout << "[Phase 4]   IR generation complete. "
               << irGen.getProgram().instructions().size() << " instructions.\n";
 
-    // ── Output TAC ────────────────────────────────────────────────────
+    // ── Output Full Report ────────────────────────────────────────────
     if (!outputFile.empty()) {
         std::ofstream ofs(outputFile);
         if (!ofs.is_open()) {
@@ -148,11 +214,30 @@ int main(int argc, char* argv[]) {
             delete g_program;
             return 1;
         }
-        ofs << "; SeedScan Compiler — Three-Address Code Output\n";
+        ofs << "; SeedScan Compiler — Structured Compilation Report\n";
         ofs << "; Source: " << inputFile << "\n\n";
+
+        ofs << "============================================================\n";
+        ofs << "Phase 1: Lexeme Tokens Mapping\n";
+        ofs << "============================================================\n";
+        ofs << lexStream.str() << "\n";
+
+        ofs << "============================================================\n";
+        ofs << "Phase 2: Abstract Syntax Tree (AST)\n";
+        ofs << "============================================================\n";
+        ofs << astStream.str() << "\n";
+
+        ofs << "============================================================\n";
+        ofs << "Phase 3: Semantic Analysis\n";
+        ofs << "============================================================\n";
+        ofs << semStream.str() << "\n";
+
+        ofs << "============================================================\n";
+        ofs << "Phase 4: Three-Address Code (TAC)\n";
+        ofs << "============================================================\n";
         ofs << tacOutput;
         ofs.close();
-        std::cout << "\nTAC written to: " << outputFile << "\n";
+        std::cout << "\nStructured output written to: " << outputFile << "\n";
     } else {
         std::cout << "\n--- Three-Address Code ---\n";
         std::cout << tacOutput;
