@@ -1,0 +1,27 @@
+// Example: Basic class with public/private members
+class Rectangle {
+    private:
+        float width;
+        float height;
+    public:
+        void setDimensions(float w, float h) {
+            width = w;
+            height = h;
+        }
+        float area() {
+            return width * height;
+        }
+        float perimeter() {
+            return 2.0 * (width + height);
+        }
+};
+
+int main() {
+    Rectangle rect;
+    rect.setDimensions(5.0, 3.0);
+    float a = rect.area();
+    float p = rect.perimeter();
+    cout << "Area: " << a << endl;
+    cout << "Perimeter: " << p << endl;
+    return 0;
+}

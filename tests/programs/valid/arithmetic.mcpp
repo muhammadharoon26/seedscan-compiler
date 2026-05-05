@@ -1,0 +1,10 @@
+// Valid: basic arithmetic and variable declarations
+int main() {
+    int x = 10;
+    int y = 20;
+    int z = x + y * 2;
+    float f = 3.14;
+    float result = f + x;
+    cout << "Result: " << result << endl;
+    return 0;
+}

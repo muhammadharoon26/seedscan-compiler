@@ -1,0 +1,7 @@
+// Invalid: undeclared variable usage
+int main() {
+    x = 10;
+    int y = z + 5;
+    foo(1, 2);
+    return 0;
+}

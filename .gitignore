@@ -1,0 +1,82 @@
+# =========================================================================
+# SeedScan Mini-C++ Compiler — .gitignore
+# =========================================================================
+
+# ── Build Directories & Artifacts ────────────────────────────────────────
+build/
+bin/
+lib/
+out/
+dist/
+Testing/
+
+# ── Executables & Binaries ───────────────────────────────────────────────
+*.exe
+*.out
+*.app
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.dll
+*.dylib
+
+# ── CMake & Make ─────────────────────────────────────────────────────────
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+Makefile
+compile_commands.json
+.cmake/
+*.cmake
+_deps/
+
+# ── Generated Sources (Flex & Bison) ─────────────────────────────────────
+# Since Flex/Bison outputs are generated during the build step,
+# they shouldn't be tracked if they are output locally.
+src/scanner.cpp
+src/scanner.hpp
+src/parser.cpp
+src/parser.hpp
+src/location.hh
+src/position.hh
+src/stack.hh
+
+# ── IDEs & Editors ───────────────────────────────────────────────────────
+# VS Code
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+*.sln
+*.vcxproj
+*.vcxproj.filters
+
+# JetBrains (CLion / IDEA)
+.idea/
+cmake-build-*/
+*.iws
+*.iml
+
+# Other
+*.swp
+*~
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# ── Testing & Logs ───────────────────────────────────────────────────────
+*.log
+coverage/
+*.gcda
+*.gcno
+*.gcov
+Testing/

@@ -1,0 +1,19 @@
+// Valid: basic class with members and methods
+class Counter {
+    private:
+        int count;
+    public:
+        void reset() { count = 0; }
+        void increment() { count = count + 1; }
+        int getCount() { return count; }
+};
+
+int main() {
+    Counter c;
+    c.reset();
+    c.increment();
+    c.increment();
+    int val = c.getCount();
+    cout << val << endl;
+    return 0;
+}

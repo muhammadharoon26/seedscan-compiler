@@ -1,0 +1,14 @@
+// Valid: function declarations with parameters
+int add(int a, int b) {
+    return a + b;
+}
+
+void greet() {
+    cout << "Hello!" << endl;
+}
+
+int main() {
+    int result = add(3, 4);
+    greet();
+    return 0;
+}

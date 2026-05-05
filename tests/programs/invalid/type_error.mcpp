@@ -1,0 +1,6 @@
+// Invalid: type mismatch errors
+int main() {
+    int x = "hello";
+    float f = 'a' + "string";
+    return 0;
+}

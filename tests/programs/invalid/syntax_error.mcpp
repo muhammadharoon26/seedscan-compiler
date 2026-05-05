@@ -1,0 +1,8 @@
+// Invalid: syntax errors
+int main() {
+    int x = ;
+    if x > 5 {
+        cout << "bad" << endl;
+    }
+    return
+}
